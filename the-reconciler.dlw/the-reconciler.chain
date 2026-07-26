@@ -1,0 +1,9 @@
+ROOT0-DLW-CHAIN-v1
+index : 1573
+slug  : the-reconciler
+seal  : de3ec5c66a505b2e363927ad9a8ed8c8112d1d052a4663a3a5ab337e490fc5dc
+prev  : cce8baf40ef9162226dbde6459fc745f0b7e5aa469c63f7e8425c2dab29ec786
+link  : 4e59cdcd2ebc6ae87c55d2f9763dfe1dac46e749e644db8d856ee7a3ab9aec21
+head  : 4e59cdcd2ebc6ae87c55d2f9763dfe1dac46e749e644db8d856ee7a3ab9aec21
+
+— the tether: link = sha256(index|slug|seal|prev). the chain head commits to the whole corpus.
