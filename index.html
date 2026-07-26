@@ -49,13 +49,17 @@ input[type=range]{accent-color:var(--k1);width:160px}
 </style></head><body>
 <div class="desk">
   <div class="dtag">⇆ <b>ESKIMO BROTHERS</b> · the symbiotic ACI stack · two exits of one substrate · kept by <i>THE BROTHERS</i></div>
-  <h1>THE RECONCILER <span class="drag">◧ 2D · ◍ 3D · 👶 TAP</span></h1>
+  <h1>THE RECONCILER <span class="drag">◧ 2D · ◍ 3D · ◆ 4D · ◐ shadow · 👶 TAP</span></h1>
   <p class="sub">Two replicas edit apart, in different orders, with no coordinator. Merge is set union; the order is a pure function of the merged set &mdash; a causal sort. <b>Slide the gossip</b> (or <b>tap</b>) and watch the two collapse onto one identical line and one identical hash: convergence by construction.</p>
   <div class="tier"><span class="chip lit">◆ LIT</span><span class="chip amb">▲ AMBER</span></div>
   <div class="card">
     <div class="panels">
       <div class="panel"><div class="lbl">◧ THE MEASURE · 2D</div><canvas id="c2d" class="pane" width="420" height="315"></canvas></div>
       <div class="panel"><div class="lbl">◍ THE LINE · 3D · two replicas → one causal spine</div><canvas id="c3d" class="pane" width="420" height="315"></canvas></div>
+    </div>
+    <div class="panels">
+      <div class="panel"><div class="lbl">◆ THE FOURTH · 4D · a tesseract turns</div><canvas id="c4d" class="pane" width="420" height="315"></canvas></div>
+      <div class="panel"><div class="lbl">◐ THE SHADOW · one dimension down</div><canvas id="cshad" class="pane" width="420" height="315"></canvas></div>
     </div>
     <div class="toddler"><div class="lbl">👶 THE TODDLER CORNER — one fat tap</div><canvas id="ctod" width="860" height="292"></canvas></div>
     <div class="controls"><label class="rng">gossip <input type="range" id="f" min="0" max="100" value="0" step="1"><b id="fv">0%</b></label></div>
@@ -75,11 +79,38 @@ window.onerror=function(m,s,l,c,e){var f=document.getElementById('fail');if(f){f
 <script>
 (function(){
   var c2=document.getElementById('c2d'), ct=document.getElementById('ctod'), c3=document.getElementById('c3d');
+  var c4=document.getElementById('c4d'), cs=document.getElementById('cshad');
   if(!c2||!ct||!c3)return;
   var g2=c2.getContext('2d'), gt=ct.getContext('2d');
+  var g4=c4&&c4.getContext('2d'), gs=cs&&cs.getContext('2d');
   var DPR=Math.min(window.devicePixelRatio||1,2);
   function fit(cv,ar){var w=cv.clientWidth||400;cv.width=Math.round(w*DPR);cv.height=Math.round(w*ar*DPR);}
-  function sizeAll(){fit(c2,0.75);fit(ct,0.34);c3.width=Math.round((c3.clientWidth||400)*DPR);c3.height=Math.round((c3.clientWidth||400)*0.75*DPR);}
+  function sizeAll(){fit(c2,0.75);fit(ct,0.34);if(c4)fit(c4,0.75);if(cs)fit(cs,0.75);c3.width=Math.round((c3.clientWidth||400)*DPR);c3.height=Math.round((c3.clientWidth||400)*0.75*DPR);}
+  // ---- shared 4D: a real tesseract (16 verts, 32 edges) rotating through two 4-planes, 4D→3D→2D ----
+  var T4=[],E4=[];for(var _i=0;_i<16;_i++)T4.push([(_i&1?1:-1),(_i&2?1:-1),(_i&4?1:-1),(_i&8?1:-1)]);
+  for(var _i=0;_i<16;_i++)for(var _j=_i+1;_j<16;_j++){var _d=0;for(var _k=0;_k<4;_k++)if(T4[_i][_k]!==T4[_j][_k])_d++;if(_d===1)E4.push([_i,_j]);}
+  function proj4(v,a,b,cc){var x=v[0],y=v[1],z=v[2],w=v[3];
+    var x1=x*Math.cos(a)-w*Math.sin(a),w1=x*Math.sin(a)+w*Math.cos(a);
+    var y1=y*Math.cos(b)-z*Math.sin(b),z1=y*Math.sin(b)+z*Math.cos(b);
+    var x2=x1*Math.cos(cc)-y1*Math.sin(cc),y2=x1*Math.sin(cc)+y1*Math.cos(cc);
+    var k=1.9/(3-w1),X=x2*k,Y=y2*k,Z=z1*k,k2=1.7/(3-Z);return {x:X*k2,y:Y*k2,X:X,Y:Y,w:w1};}
+  function hx4(h){h=(''+h).replace('#','');return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];}
+  function draw4d(env){var g=g4;if(!g)return;var w=c4.width/DPR,h=c4.height/DPR;g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,w,h);
+    var I=window.__INST__||{},c1=hx4(I.col1||'#7a7aff'),c2c=hx4(I.col2||'#e0a040');
+    var a=env.t*0.5,b=env.t*0.33,cc=env.fused*3.1416,S=Math.min(w,h)*0.34,cx=w/2,cy=h/2;
+    var P=T4.map(function(v){return proj4(v,a,b,cc);});
+    g.lineWidth=1.3;E4.forEach(function(e){var p=P[e[0]],q=P[e[1]],al=0.28+0.42*((p.w+q.w)/2+2)/4;
+      g.strokeStyle='rgba('+c1[0]+','+c1[1]+','+c1[2]+','+al.toFixed(2)+')';g.beginPath();g.moveTo(cx+p.x*S,cy+p.y*S);g.lineTo(cx+q.x*S,cy+q.y*S);g.stroke();});
+    g.fillStyle='rgb('+c2c[0]+','+c2c[1]+','+c2c[2]+')';P.forEach(function(p){g.beginPath();g.arc(cx+p.x*S,cy+p.y*S,2+(p.w+2)/4*1.6,0,6.283);g.fill();});}
+  function drawShadow(env){var g=gs;if(!g)return;var w=cs.width/DPR,h=cs.height/DPR;g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,w,h);
+    var a=env.t*0.5,b=env.t*0.33,cc=env.fused*3.1416,S=Math.min(w,h)*0.34,cx=w/2,cy=h*0.5;
+    var P=T4.map(function(v){return proj4(v,a,b,cc);});
+    // the cast shadow: the 3D projection dropped onto the floor (orthographic, y squashed), built up as soft dark ink
+    var fy=cy+h*0.28;g.strokeStyle='rgba(20,18,34,0.16)';g.lineWidth=7;g.lineCap='round';
+    E4.forEach(function(e){var p=P[e[0]],q=P[e[1]];g.beginPath();g.moveTo(cx+p.X*S,fy+p.Y*S*0.34);g.lineTo(cx+q.X*S,fy+q.Y*S*0.34);g.stroke();});
+    g.strokeStyle='rgba(15,12,26,0.5)';g.lineWidth=1;
+    E4.forEach(function(e){var p=P[e[0]],q=P[e[1]];g.beginPath();g.moveTo(cx+p.X*S,fy+p.Y*S*0.34);g.lineTo(cx+q.X*S,fy+q.Y*S*0.34);g.stroke();});
+    g.fillStyle='rgba(40,36,60,0.5)';g.font='10px ui-monospace,monospace';g.textAlign='center';g.fillText('the shadow the fourth casts on the floor',cx,h-10);}
   sizeAll(); addEventListener('resize',function(){sizeAll();if(GL)GL.resize();});
   var env={mix:0.5, fused:0.0, _ftar:0.0, t:0,
     set:function(id,val,cls){var e=document.getElementById(id);if(e){e.textContent=val;if(cls!=null)e.className='v '+cls;}},
@@ -122,6 +153,7 @@ window.onerror=function(m,s,l,c,e){var f=document.getElementById('fail');if(f){f
     g2.setTransform(DPR,0,0,DPR,0,0); if(I.draw2d)I.draw2d(env);
     gt.setTransform(DPR,0,0,DPR,0,0); if(I.drawTod)I.drawTod(env);
     if(GLP){GLP.clear(); if(I.draw3d)I.draw3d(env,GLP); else defaultGeom(env,GLP);}
+    draw4d(env); drawShadow(env);
   }
   requestAnimationFrame(loop);
   window.__ENV__=env;
