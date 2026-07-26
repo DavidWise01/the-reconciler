@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="dark"><meta name="theme-color" content="#081420">
+<meta name="author" content="David Lee Wise / ROOT0 / TriPod LLC, with AVAN">
+<title>THE RECONCILER · CvRDT merge → causal line · ESKIMO BROTHERS · UD0</title>
+<meta name="description" content="Two replicas, one truth by construction — a grow-only op-set (CvRDT) merged by union and linearised by causal topological sort. The DACI core, single-page and self-testing.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='32' r='8' fill='none' stroke='%236fd0ea' stroke-width='3'/%3E%3Ccircle cx='44' cy='32' r='8' fill='none' stroke='%23ffcf7a' stroke-width='3'/%3E%3Cpath d='M28 32 h8' stroke='%23cfeaf2' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#081420;--pa:#e6f4fa;--pa2:#b0d4e4;--dim:#6f9db0;--line:rgba(111,208,234,.22);
+  --c:#6fd0ea;--warm:#ffcf7a;--good:#7fe6b0;--bad:#ff7a8a;
+  --disp:"Iowan Old Style",Palatino,Georgia,serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+::selection{background:rgba(111,208,234,.3)}
+body{background:radial-gradient(1000px 620px at 20% -8%,rgba(111,208,234,.14),transparent 56%),
+  radial-gradient(1000px 620px at 84% 108%,rgba(255,207,122,.07),transparent 56%),var(--ink);
+  color:var(--pa);font-family:var(--disp);line-height:1.6;min-height:100vh}
+.wrap{max-width:1000px;margin:0 auto;padding:54px 22px 90px}
+.eye{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--c)}
+h1{font-weight:800;font-size:clamp(2rem,6vw,3.4rem);line-height:1;margin:10px 0 6px;color:#fff;text-shadow:0 0 22px rgba(111,208,234,.4)}
+.sub{font-style:italic;color:var(--pa2);max-width:70ch;margin:6px 0 2px}
+.badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);border-radius:20px;padding:5px 13px;margin-top:14px;color:var(--pa2)}
+.badge.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,transparent)}
+.badge.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,transparent)}
+.reps{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+@media(max-width:680px){.reps{grid-template-columns:1fr}}
+.rep{border:1px solid var(--line);border-radius:14px;padding:16px;background:linear-gradient(165deg,rgba(20,40,52,.5),rgba(10,20,30,.4))}
+.rep h2{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.rep.A h2{color:var(--c)}.rep.B h2{color:var(--warm)}
+.rep .cap{font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:12px}
+.ops{font-family:var(--mono);font-size:12px;min-height:120px}
+.op{display:flex;gap:8px;padding:4px 0;border-bottom:1px dashed rgba(111,208,234,.12)}
+.op .id{color:#fff;font-weight:700}.op .rf{color:var(--dim)}.op .bd{color:var(--pa2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--pa);background:rgba(111,208,234,.1);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;transition:.14s}
+button:hover{border-color:var(--c);color:#fff;background:rgba(111,208,234,.2)}
+button.warm:hover{border-color:var(--warm)}
+.merge{text-align:center;margin:26px 0 8px}
+button.big{font-size:13px;padding:12px 26px;background:linear-gradient(90deg,rgba(111,208,234,.2),rgba(255,207,122,.2))}
+.out{margin-top:22px;border:1px solid var(--line);border-radius:14px;padding:18px;background:rgba(8,16,26,.5)}
+.out h2{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--good);margin-bottom:10px}
+.line{display:grid;grid-template-columns:auto auto 1fr auto;gap:12px;font-family:var(--mono);font-size:12.5px;padding:6px 8px;border-radius:6px}
+.line:nth-child(odd){background:rgba(111,208,234,.05)}
+.line .d{color:var(--dim)}.line .i{color:#fff;font-weight:700}.line .b{color:var(--pa2)}.line .src{font-size:10px}
+.line .src.A{color:var(--c)}.line .src.B{color:var(--warm)}.line .src.AB{color:var(--good)}
+.hashrow{display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;font-family:var(--mono);font-size:12px}
+.hashrow b{color:#fff}
+.verdict{font-family:var(--mono);font-size:13px;margin-top:14px;padding:12px;border-radius:10px;text-align:center;letter-spacing:.04em}
+.verdict.ok{background:rgba(127,230,176,.12);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 40%,transparent)}
+.verdict.no{background:rgba(255,122,138,.12);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent)}
+.note{font-size:.92rem;color:var(--pa2);max-width:74ch;margin:26px 0 0;border-left:2px solid rgba(111,208,234,.5);padding-left:14px}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.9}
+footer a{color:var(--pa2);text-decoration:none;border-bottom:1px dotted var(--line)}footer a:hover{color:var(--c)}
+</style></head>
+<body>
+<main class="wrap">
+  <div class="eye">ESKIMO BROTHERS · the symbiotic ACI stack · the DACI core</div>
+  <h1>THE RECONCILER</h1>
+  <p class="sub">Two replicas edit apart, in different orders, with no coordinator. Merge is set&#8209;union; the substrate is a pure function of the merged set &mdash; a causal topological sort. Same set in &rarr; byte&#8209;identical order out, on every replica. Convergence <em>by construction</em>, not by a vote.</p>
+  <div id="selftest" class="badge">self-test: running&hellip;</div>
+
+  <div class="reps">
+    <div class="rep A"><h2>&#9673; replica A &middot; HACI-side</h2><div class="cap">grow-only op-set · applied in A's order</div><div class="ops" id="opsA"></div>
+      <div class="ctl"><button onclick="addOp('A')">+ op on A</button><button onclick="fork('A')">+ concurrent op</button></div></div>
+    <div class="rep B"><h2>&#9673; replica B &middot; MACI-side</h2><div class="cap">grow-only op-set · applied in B's order</div><div class="ops" id="opsB"></div>
+      <div class="ctl"><button class="warm" onclick="addOp('B')">+ op on B</button><button class="warm" onclick="fork('B')">+ concurrent op</button></div></div>
+  </div>
+
+  <div class="merge"><button class="big" onclick="gossip()">&#8646;&nbsp; GOSSIP &amp; RECONCILE &nbsp;&#8646;</button></div>
+
+  <div class="out">
+    <h2>the reconciled substrate &mdash; one causal line</h2>
+    <div id="line"></div>
+    <div class="hashrow"><span>A&rsquo;s hash: <b id="hA">&mdash;</b></span><span>B&rsquo;s hash: <b id="hB">&mdash;</b></span><span id="ops">&mdash;</span></div>
+    <div class="verdict" id="verdict">merge to reconcile the two replicas</div>
+  </div>
+
+  <p class="note">This is the <b>DACI</b> substrate on one page: a node&rsquo;s knowledge is a grow&#8209;only set of messages (a state&#8209;based CvRDT &mdash; merge is union: commutative, associative, idempotent), and the linear order is a <b>pure function</b> of that set &mdash; depth = 1 + max(depth of refs), sorted by (depth, id), so a reference always precedes its user and the tiebreak is total. Add ops on either side in any order, then gossip: both replicas collapse to the <b>same</b> line and the <b>same</b> hash. &#9670; HONEST: a single&#8209;page simulation of N replicas (in&#8209;browser, reproducible), demonstrating Strong Eventual Consistency <em>by construction</em> &mdash; the same design proven and fuzz&#8209;tested in the full <a href="https://davidwise01.github.io/daci/">daci</a> engine, not a networked deployment, and it reconciles order, it does not adjudicate which body is <em>true</em> (an authority question, upstream in <a href="https://davidwise01.github.io/continuity/">continuity</a>).</p>
+
+  <footer>THE RECONCILER &middot; a member of <a href="https://davidwise01.github.io/eskimo-brothers/">ESKIMO BROTHERS</a> &middot; the causal core of <a href="https://davidwise01.github.io/daci/">DACI</a> &middot; <a href="https://davidwise01.github.io/ud0/d/eskimo.html">the keeper</a> &middot; <a href="https://0root.ai">0root.ai</a><br>merge = union · order = causal topological sort · one truth by construction · CC-BY-ND-4.0, David Lee Wise / ROOT0 with AVAN</footer>
+</main>
+<script>
+// ── the CvRDT: a grow-only set of ops {id, refs:[ids], body}. merge = union. ──
+// ── the substrate: a pure function of the set — causal topological sort. ──
+function linearize(opset){
+  var byId={}; opset.forEach(function(o){byId[o.id]=o;});
+  var depth={}, seen={};
+  function d(id){
+    if(depth[id]!=null)return depth[id];
+    if(seen[id])return 0;              // cycle guard (never happens for grow-only refs-to-past)
+    seen[id]=1; var o=byId[id]; if(!o){return 0;}
+    var m=0; o.refs.forEach(function(r){ if(byId[r]) m=Math.max(m, 1+d(r)); });
+    return depth[id]=m;
+  }
+  var arr=opset.map(function(o){return {id:o.id, dep:d(o.id), body:o.body, src:o.src};});
+  arr.sort(function(x,y){ return x.dep-y.dep || (x.id<y.id?-1:x.id>y.id?1:0); });
+  return arr;
+}
+function hash(line){ // FNV-1a over the linear order — identical order ⇒ identical hash
+  var h=0x811c9dc5>>>0, s=line.map(function(o){return o.id+':'+o.body;}).join('|');
+  for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
+  return ('0000000'+h.toString(16)).slice(-8);
+}
+// ── seeded op factory (no Math.random — reproducible) ──
+var WORDS=['open','sense','fold','anchor','merge','witness','seal','bridge','converge','carry','read','write'];
+var A=[], B=[], ctr={A:0,B:0}, seedn=7;
+function nid(side){ ctr[side]++; return side.toLowerCase()+ctr[side]; }
+function nextword(){ seedn=(seedn*1103515245+12345)&0x7fffffff; return WORDS[seedn%WORDS.length]; }
+function allIds(){ var s={}; A.concat(B).forEach(function(o){s[o.id]=1;}); return Object.keys(s); }
+function addOp(side){ var arr=side==='A'?A:B; var ids=allIds(); var refs=ids.length?[ids[(seedn>>3)%ids.length]]:[];
+  arr.push({id:nid(side),refs:refs,body:nextword(),src:side}); render(); }
+function fork(side){ // a concurrent op that refs the SAME parent as the other side's latest — a real divergence
+  var arr=side==='A'?A:B; var ids=allIds(); var refs=ids.length?[ids[0]]:[];
+  arr.push({id:nid(side),refs:refs,body:nextword()+'*',src:side}); render(); }
+function renderOps(el,arr){ el.innerHTML=arr.map(function(o){return '<div class="op"><span class="id">'+o.id+'</span><span class="rf">'+(o.refs.length?'→'+o.refs.join(','):'○')+'</span><span class="bd">'+o.body+'</span></div>';}).join('')||'<div class="op"><span class="bd" style="color:var(--dim)">(empty)</span></div>'; }
+function render(){ renderOps(document.getElementById('opsA'),A); renderOps(document.getElementById('opsB'),B);
+  document.getElementById('verdict').className='verdict'; document.getElementById('verdict').textContent='ops changed — gossip to reconcile';
+  document.getElementById('line').innerHTML=''; document.getElementById('hA').textContent='—'; document.getElementById('hB').textContent='—'; document.getElementById('ops').textContent='—'; }
+function merged(){ var s={}; A.concat(B).forEach(function(o){s[o.id]=o;}); return Object.keys(s).map(function(k){return s[k];}); }
+function whichSrc(id){ var inA=A.some(function(o){return o.id===id;}), inB=B.some(function(o){return o.id===id;}); return inA&&inB?'AB':inA?'A':'B'; }
+function gossip(){
+  // each replica merges the union, then linearises independently — must match
+  var setA=A.concat(B), setB=B.concat(A);           // different insertion orders on purpose
+  var lineA=linearize(setA), lineB=linearize(setB);
+  var hA=hash(lineA), hB=hash(lineB);
+  document.getElementById('hA').textContent=hA; document.getElementById('hB').textContent=hB;
+  document.getElementById('ops').textContent=lineA.length+' ops · '+allIds().length+' unique';
+  document.getElementById('line').innerHTML=lineA.map(function(o){var s=whichSrc(o.id);
+    return '<div class="line"><span class="d">d'+o.dep+'</span><span class="i">'+o.id+'</span><span class="b">'+o.body+'</span><span class="src '+s+'">'+(s==='AB'?'A∧B':s)+'</span></div>';}).join('');
+  var v=document.getElementById('verdict');
+  if(hA===hB){ v.className='verdict ok'; v.textContent='✓ CONVERGED — both replicas produced the same causal line and the same hash '+hA+' (Strong Eventual Consistency, by construction)'; }
+  else{ v.className='verdict no'; v.textContent='✗ DIVERGED — '+hA+' ≠ '+hB+' (this must never happen for a CvRDT; it would be a bug)'; }
+  return hA===hB;
+}
+// ── self-test on load: two divergent orders MUST converge; and a TEETH check that the hash can differ ──
+(function(){
+  var bad=document.getElementById('selftest');
+  try{
+    // build a fixed divergent scenario
+    A=[{id:'a1',refs:[],body:'open',src:'A'},{id:'a2',refs:['a1'],body:'fold',src:'A'}];
+    B=[{id:'b1',refs:['a1'],body:'sense',src:'B'},{id:'b2',refs:['b1'],body:'seal',src:'B'}];
+    var l1=linearize(A.concat(B)), l2=linearize(B.concat(A));
+    var conv = hash(l1)===hash(l2);
+    // TEETH: a genuinely different set must hash differently (the check is non-vacuous)
+    var l3=linearize(A.concat(B).concat([{id:'z9',refs:['a1'],body:'carry',src:'A'}]));
+    var teeth = hash(l1)!==hash(l3);
+    // causal order: a ref always precedes its user
+    var pos={}; l1.forEach(function(o,i){pos[o.id]=i;}); var causal = pos['a1']<pos['a2'] && pos['a1']<pos['b1'] && pos['b1']<pos['b2'];
+    if(conv && teeth && causal){ bad.className='badge ok'; bad.textContent='✓ self-test: converge ✓ · causal-order ✓ · teeth ✓ (hash '+hash(l1)+')'; }
+    else throw new Error('conv='+conv+' teeth='+teeth+' causal='+causal);
+  }catch(e){ bad.className='badge no'; bad.textContent='✗ self-test FAILED: '+e.message; }
+  // seed the visible demo
+  A=[{id:'a1',refs:[],body:'open',src:'A'},{id:'a2',refs:['a1'],body:'anchor',src:'A'}];
+  B=[{id:'b1',refs:['a1'],body:'sense',src:'B'}]; ctr={A:2,B:1}; render();
+})();
+</script>
+</body></html>
